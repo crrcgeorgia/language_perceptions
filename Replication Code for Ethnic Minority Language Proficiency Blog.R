@@ -1,6 +1,4 @@
-###CRRC blog by Rowan Baker
-###Georgian Language Proficiency Splits Government Perceptions among Georgia's Azerbaijanis and Armenians
-###August, 2019
+###Georgian Language Proficiency and Government Perceptions
 
 library(haven)
 library(stringr)
@@ -9,17 +7,14 @@ library(ggeffects)
 library(survey)
 library(MASS)
 
-
 download.file("https://caucasusbarometer.org/downloads/NDI_2019_April_22.04.19_Public.dta", "NDI_2019_April_22.04.19_Public.dta", quiet = FALSE, mode = "wb")
 
-
-try <- read_dta("NDI_2019_April_22.04.19_Public.dta")
-
-names(try)
+NDI19 <- read_dta("NDI_2019_April_22.04.19_Public.dta")
+names(NDI19)
 
 NDI19svy_A8 <- svydesign(id=~PSU, strata=~SUBSTRATUM, 
                          weights=~WTIND,  
-                         data=try)
+                         data=NDI19)
 
 ###Perceptions of government for the respondent
 ##RATEGOV4
@@ -174,8 +169,7 @@ NDI19svy_A8$variables$OWNCHTG[NDI19svy_A8$variables$OWNCHTG==-3]<-NA
 NDI19svy_A8$variables$OWNCHTG[NDI19svy_A8$variables$OWNCHTG==-2]<-NA
 NDI19svy_A8$variables$OWNCHTG[NDI19svy_A8$variables$OWNCHTG==-1]<-NA
 table(NDI19svy_A8$variables$OWNCHTG)
-###Now to make own into its own category
-###Why does this not work?
+###Index
 NDI19svy_A8$variables$OWN <- (NDI19svy_A8$variables$OWNWASH+
                                 NDI19svy_A8$variables$OWNCHTG+ 
                                 NDI19svy_A8$variables$OWNHWT+ 
@@ -189,18 +183,15 @@ NDI19svy_A8$variables$OWN <- (NDI19svy_A8$variables$OWNWASH+
 NDI19svy_A8$variables$OWN<-NDI19svy_A8$variables$OWN
 hist(NDI19svy_A8$variables$OWN)
 
-
-#Sum 
+#Ethnicity
 names(NDI19svy_A8)
 summary(NDI19svy_A8$variables$ETHNIC)
 table(NDI19svy_A8$variables$ETHNIC)
-#cleaning
 NDI19svy_A8$variables$ETHNIC<-NDI19svy_A8$variables$ETHNIC
 NDI19svy_A8$variables$ETHNIC[NDI19svy_A8$variables$ETHNIC==-3]<-NA
 NDI19svy_A8$variables$ETHNIC[NDI19svy_A8$variables$ETHNIC==-1]<-NA
 table(NDI19svy_A8$variables$ETHNIC)
 #Recoding for ETHNIC_r
-#Explanation - the number of ETHNIC_r minorities was small outside of Armenians and Azeris, and were therefore blocked together into (4) NA category.
 ##ETHNIC for just Georgian and minority Areminian and Azeri
 NDI19svy_A8$variables$ETHNIC[NDI19svy_A8$variables$ETHNIC>=4]<-NA
 NDI19svy_A8$variables$ETHNIC[NDI19svy_A8$variables$ETHNIC==3]<-0
@@ -220,8 +211,6 @@ NDI19svy_A8$variables$RESPEDU[NDI19svy_A8$variables$RESPEDU==-2]<-NA
 NDI19svy_A8$variables$RESPEDU[NDI19svy_A8$variables$RESPEDU==-1]<-NA
 table(NDI19svy_A8$variables$RESPEDU)
 #Recoding resp edu
-#Explanation - the number of individuals with less than a secondary edu was small, and were therefore blocked into a (1) category with secondary.
-#Explanation - the number of individuals with a bachelors or higher were small, and therefore blocked into a (3) category.
 NDI19svy_A8$variables$RESPEDU_r<-NDI19svy_A8$variables$RESPEDU
 NDI19svy_A8$variables$RESPEDU_r[NDI19svy_A8$variables$RESPEDU_r==2]<-1
 NDI19svy_A8$variables$RESPEDU_r[NDI19svy_A8$variables$RESPEDU_r==3]<-1
@@ -274,7 +263,7 @@ NDI19svy_A8$variables$HAVEJOB_f<-as.factor(NDI19svy_A8$variables$HAVEJOB)
 
 ### Universe: only ethnic minority population, plus ordered logit
 
-try2 <- NDI19svy_A8$variables %>%
+NDI192 <- NDI19svy_A8$variables %>%
   filter(ETHNIC == 1 | ETHNIC == 2)%>%
   mutate(rategov = factor(RATEGOV4_n, levels = 1:4, ordered = T, labels = c("Very badly", "Badly", "Well", "Very well")),
          knowgeo = factor(KNOWGEO, levels = 1:4, ordered = T, labels =c("No Knowledge", "Basic", "Intermediate", "Advance")),
@@ -289,7 +278,7 @@ gov_1 = polr(rategov ~
                RESPSEX_f + 
                HHSIZE_n + 
                (SETTYPE) +
-               HAVEJOB_f, data=try2)
+               HAVEJOB_f, data=NDI192)
 summary(gov_1)
 
 plot(ggpredict(gov_1, terms = c("knowgeo", "ethnic")))
